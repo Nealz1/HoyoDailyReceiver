@@ -2,8 +2,6 @@ import tkinter as tk
 from tkinter import messagebox
 import pickle
 import os
-from cryptography.fernet import Fernet, InvalidToken
-import binascii
 
 def center_window(size, window):
     """Centers the window on the screen."""
@@ -16,33 +14,9 @@ def center_window(size, window):
     window.geometry(window_geometry)
     return
 
-# Generate a key for encryption
-def generate_key():
-    return Fernet.generate_key()
-
-# Save the key to a file
-def save_key(key, key_file='secret.key'):
-    with open(key_file, 'wb') as keyfile:
-        keyfile.write(key)
-
-# Load the key from a file
-def load_key(key_file='secret.key'):
-    with open(key_file, 'rb') as keyfile:
-        return keyfile.read()
-
-# Encrypt data
-def encrypt_data(data, key):
-    fernet = Fernet(key)
-    return fernet.encrypt(pickle.dumps(data))
-
-# Decrypt data
-def decrypt_data(data, key):
-    fernet = Fernet(key)
-    return pickle.loads(fernet.decrypt(data))
-
 # Initialize main window
 root = tk.Tk()
-root.title("Hoyo Games Daily Check-in Receiver")
+root.title("Easy way for daily rewards")
 
 # Set the custom icon
 icon_path = 'image.png'
@@ -50,30 +24,21 @@ if os.path.exists(icon_path):
     root.iconphoto(True, tk.PhotoImage(file=icon_path))
 
 # Define window size and center it
-size = (400, 300)  # Width x Height for the Tk root
+size = (310, 250)  # Width x Height for the Tk root
 center_window(size, root)
 root.resizable(False, False)  # Disable window resizing
 
 # File to store login data
 login_data_file = 'login_data.pkl'
-key_file = 'secret.key'
-
-# Generate and save the key if it does not exist
-if not os.path.exists(key_file):
-    save_key(generate_key(), key_file)
-
-# Load the encryption key
-key = load_key(key_file)
 
 def load_login_data():
     """Loads saved login data from file, if it exists."""
     if os.path.exists(login_data_file):
         try:
             with open(login_data_file, 'rb') as f:
-                encrypted_data = f.read()
-                return decrypt_data(encrypted_data, key)
-        except (InvalidToken, pickle.UnpicklingError, binascii.Error) as e:
-            # Handle decryption errors by removing corrupted data file
+                return pickle.load(f)
+        except (pickle.UnpicklingError, EOFError) as e:
+            # Handle errors by removing corrupted data file
             print(f"Error loading login data: {e}")
             os.remove(login_data_file)
     return {"username": "", "password": "", "games": {"HI3": False, "HSR": False, "GI": False, "ZZZ": False}, "remember_me": False}
@@ -81,9 +46,8 @@ def load_login_data():
 def save_login_data(username, password, game_selections, remember_me):
     """Saves login data to file."""
     data = {"username": username, "password": password, "games": game_selections, "remember_me": remember_me}
-    encrypted_data = encrypt_data(data, key)
     with open(login_data_file, 'wb') as f:
-        f.write(encrypted_data)
+        pickle.dump(data, f)
 
 def save_remember_me():
     """Saves the 'remember me' state and current selections if 'remember me' is enabled."""
@@ -128,7 +92,7 @@ txt_password.insert(0, login_data["password"])
 
 # Label for game selection checkboxes
 lbl_games = tk.Label(root, text="Select games to check-in:")
-lbl_games.grid(column=0, row=2, pady=10, padx=5, sticky='W')
+lbl_games.grid(column=1, row=2, pady=10, padx=5, sticky='W')
 
 # Create frame for checkboxes to manage their layout
 frame = tk.Frame(root)
@@ -151,13 +115,6 @@ chk_gi.grid(column=2, row=0, padx=10)
 
 chk_zzz = tk.Checkbutton(frame, text="ZZZ", variable=chk_zzz_var, command=save_games)
 chk_zzz.grid(column=3, row=0, padx=10)
-
-# Label to display the result of user action
-lbl_result = tk.Label(root, text="")
-lbl_result.grid(column=0, row=5, columnspan=4, pady=10)
-
-# 'Remember me' checkbox variable
-chk_remember_var = tk.BooleanVar(value=login_data["remember_me"])
 
 def clicked():
     """Handles the click event of the main button."""
@@ -182,8 +139,15 @@ def clicked():
             os.remove(login_data_file)
 
 # Main button widget
-btn = tk.Button(root, text="Click me", fg="red", command=clicked)
-btn.grid(column=1, row=6, pady=10)
+btn = tk.Button(root, text="Receive", fg="red", command=clicked)
+btn.grid(column=0, row=4, pady=10, columnspan=3)
+
+# Label to display the result of user action
+lbl_result = tk.Label(root, text="")
+lbl_result.grid(column=0, row=5, columnspan=4, pady=10)
+
+# 'Remember me' checkbox variable
+chk_remember_var = tk.BooleanVar(value=login_data["remember_me"])
 
 # Create menu bar
 menu_bar = tk.Menu(root)
